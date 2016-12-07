@@ -1,0 +1,10 @@
+---
+classes:
+  - ntp
+  - timezone
+
+ntp::servers:
+ - ntp.xs4all.nl
+ - ntp2.xs4all.nl
+
+timezone::timezone: 'Europe/Amsterdam'

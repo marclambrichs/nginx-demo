@@ -1,0 +1,15 @@
+[submodule "puppet/single/modules/stdlib"]
+	path = puppet/single/modules/stdlib
+	url = https://github.com/puppetlabs/puppetlabs-stdlib.git
+[submodule "puppet/single/modules/ntp"]
+	path = puppet/single/modules/ntp
+	url = https://github.com/puppetlabs/puppetlabs-ntp.git
+[submodule "puppet/single/modules/timezone"]
+	path = puppet/single/modules/timezone
+	url = https://github.com/saz/puppet-timezone.git
+[submodule "puppet/single/modules/firewall"]
+	path = puppet/single/modules/firewall
+	url = https://github.com/puppetlabs/puppetlabs-firewall.git
+[submodule "puppet/single/modules/nginx"]
+	path = puppet/single/modules/nginx
+	url = https://github.com/voxpupuli/puppet-nginx.git

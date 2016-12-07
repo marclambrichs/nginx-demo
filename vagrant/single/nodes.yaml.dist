@@ -1,0 +1,12 @@
+---
+- name: centos7
+  hostname: node1.nginx.vagrant
+  box: bento/centos-7.2
+  box_check_update: false
+  cpus: 1
+  group: '/Demo'
+  memory: 2048 
+  ip: 10.10.30.2
+  ports:
+    - guest: 80
+      host: 80

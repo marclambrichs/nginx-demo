@@ -1,0 +1,95 @@
+VAGRANTFILE_API_VERSION = "2"
+
+Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
+  ##############################################################################
+  ### check plugins
+  ##############################################################################
+  env = 'single'
+
+  required_plugins = %w(vagrant-hostmanager)
+  
+  plugins_to_install = required_plugins.select { |plugin| not Vagrant.has_plugin? plugin }
+  if not plugins_to_install.empty?
+    puts "Installing plugins: #{plugins_to_install.join(' ')}"
+    if system "vagrant plugin install #{plugins_to_install.join(' ')}"
+      exec "vagrant #{ARGV.join(' ')}"
+    else
+      abort "Installation of one or more plugins has failed. Aborting."
+    end
+  end
+
+#  if Vagrant.has_plugin?("vagrant-cachier")
+#    config.cache.scope = :machine
+#  end
+
+  if Vagrant.has_plugin?("vagrant-puppet-install")
+    config.puppet_install.puppet_version = :latest
+  end
+  
+  ##############################################################################
+  ### Global settings
+  ##############################################################################
+  env = 'single'
+  ip  = '10.10.10.10'
+  ram = 2048
+
+  config.hostmanager.enabled           = true
+  config.hostmanager.manage_host       = true
+  config.hostmanager.ignore_private_ip = false
+  config.hostmanager.include_offline   = true
+
+
+  ##############################################################################
+  ### Virtualbox(es)
+  ##############################################################################
+  require 'yaml'
+  if File.file?('nodes.yaml')
+    nodes = YAML.load_file('nodes.yaml')
+  elsif File.file?('nodes.yaml.dist')
+    nodes = YAML.load_file('nodes.yaml.dist')
+  end
+
+  nodes.each do |node|
+    ### define node
+    config.vm.define node["name"] do |srv|
+      srv.vm.box                   = node["box"]
+      if node["box_check_update"]
+        srv.vm.box_check_update    = node["box_check_update"]
+      end
+      srv.ssh.insert_key           = false
+      srv.vm.hostname              = node["hostname"]
+      if node["aliases"]
+        srv.hostmanager.aliases    = node["aliases"]
+      end
+      if node["ports"]
+        node["ports"].each do |port|
+          srv.vm.network :forwarded_port, guest: port["guest"], host: port["host"]
+        end
+      end
+      srv.vm.network :private_network, ip: "#{ip}"
+
+      srv.vm.provider :virtualbox do |vb|
+        vb.name                    = node["name"]
+        vb.cpus                    = node["cpus"]
+        vb.memory                  = node["memory"]
+      end
+      #-----------------------------------------------------------------------------
+      ### Synced directories
+      #-----------------------------------------------------------------------------
+      srv.vm.synced_folder ".", "/vagrant", disabled: true
+      srv.vm.synced_folder "../../puppet/#{env}/hieradata", "/etc/puppetlabs/code/environments/#{env}/hieradata"
+#      srv.vm.synced_folder "../../puppet/#{env}/manifests", "/etc/puppetlabs/code/environments/#{env}/manifests"
+#      srv.vm.synced_folder "../../puppet/#{env}/modules", "/etc/puppetlabs/code/environments/#{env}/modules"
+  
+      #-------------------------------------------------------------------------
+      #-- Puppet provisioning
+      #-------------------------------------------------------------------------
+      srv.vm.provision :puppet do |puppet|
+        puppet.options             = "--debug --verbose"
+        puppet.environment_path    = "../../puppet"
+        puppet.environment         = "#{env}"
+        puppet.hiera_config_path   = "../../puppet/hiera.yaml"
+      end
+    end
+  end
+end
